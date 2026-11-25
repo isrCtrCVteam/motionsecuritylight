@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Security Light</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        /* --- The Input / Process / Output Layout --- */
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .box {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex: 1;
+            min-height: 200px;
+            border-top: 4px solid;
+        }
+
+        .box h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            color: #94a3b8;
+        }
+
+        .box.input-box { border-top-color: #3b82f6; } /* Blue */
+        .box.process-box { border-top-color: #f59e0b; } /* Orange */
+        .box.output-box { border-top-color: #10b981; } /* Green */
+
+        .arrow {
+            font-size: 2rem;
+            color: #475569;
+            font-weight: bold;
+        }
+
+        /* INPUT VISUALS */
+        .sensor-visual {
+            width: 80px;
+            height: 80px;
+            background: #334155;
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            width: 60px;
+            height: 60px;
+        }
+        .led {
+            background: #475569;
+            border-radius: 2px;
+        }
+        .led.active { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        
+        .light-meter {
+            width: 100%;
+            height: 20px;
+            background: #334155;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .light-fill {
+            height: 100%;
+            width: 50%;
+            background: #facc15;
+            transition: width 0.1s;
+        }
+
+        /* PROCESS VISUALS */
+        .binary {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2rem;
+            letter-spacing: 5px;
+            color: #f59e0b;
+            min-height: 40px;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        /* OUTPUT VISUALS */
+        .house-scene {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            background: #0a0f1c;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .house-body {
+            width: 70px;
+            height: 60px;
+            background: #1e2a3a;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            border: 2px solid #334155;
+            border-bottom: none;
+        }
+
+        .house-roof {
+            width: 0;
+            height: 0;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-bottom: 30px solid #2d3f53;
+            position: absolute;
+            top: -32px;
+            left: -7px;
+        }
+
+        .porch-light {
+            position: absolute;
+            top: 15px;
+            right: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #475569;
+            transition: all 0.3s ease;
+        }
+
+        .porch-light.on {
+            background: #fbbf24;
+            box-shadow: 0 0 25px 10px rgba(251, 191, 36, 0.7);
+            animation: flicker 0.4s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 1; box-shadow: 0 0 25px 10px rgba(251,191,36,0.8); }
+            100% { opacity: 0.9; box-shadow: 0 0 35px 15px rgba(251,191,36,0.9); }
+        }
+
+        .motion-alert {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ef4444;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.4s;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        .motion-alert.show {
+            opacity: 1;
+            animation: pulseAlert 0.8s infinite;
+        }
+
+        @keyframes pulseAlert {
+            0% { opacity: 1; text-shadow: 0 0 5px #ef4444; }
+            50% { opacity: 0.5; text-shadow: 0 0 20px #ef4444; }
+            100% { opacity: 1; text-shadow: 0 0 5px #ef4444; }
+        }
+
+        /* CONTROLS */
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: #f97316;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn:hover {
+            background-color: #ea580c;
+        }
+        
+        .status-text {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .flow-container {
+                flex-direction: column;
+            }
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏡 Motion Security Light</h1>
+    <p class="subtitle">Watch how body heat (motion) triggers the porch light in real-time.</p>
+
+    <div class="flow-container">
+        
+        <!-- INPUT -->
+        <div class="box input-box">
+            <h3>1. Input (Sensor)</h3>
+            <div class="sensor-visual" id="scanner">
+                <div class="sensor-grid">
+                    <div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div>
+                    <div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div>
+                    <div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div>
+                    <div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div>
+                    <div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div><div class="led"></div>
+                </div>
+            </div>
+            <div class="light-meter">
+                <div class="light-fill" id="light-fill"></div>
+            </div>
+            <p style="font-size: 0.8rem; margin-top: 8px; color: #64748b;">Motion / Heat Level</p>
+        </div>
+
+        <div class="arrow">➔</div>
+
+        <!-- PROCESS -->
+        <div class="box process-box">
+            <h3>2. Process (Binary)</h3>
+            <div class="binary" id="binary-display"></div>
+            <p style="font-size: 0.8rem; margin-top: 8px; color: #64748b;">Analog to Digital</p>
+        </div>
+
+        <div class="arrow">➔</div>
+
+        <!-- OUTPUT -->
+        <div class="box output-box">
+            <h3>3. Output (Security Light)</h3>
+            <div class="house-scene">
+                <div class="house-body">
+                    <div class="house-roof"></div>
+                    <div class="porch-light" id="porch-light"></div>
+                </div>
+            </div>
+            <div class="motion-alert" id="motion-alert">⚠️ MOTION DETECTED</div>
+        </div>
+
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="startScan()" id="scanBtn">Wave Hand (Demo Mode)</button>
+        <div class="status-text" id="status-text">No hardware connected. Running in Demo Mode.</div>
+    </div>
+
+    <script>
+        let isScanning = false;
+        const leds = document.querySelectorAll('.led');
+        const lightFill = document.getElementById('light-fill');
+        const binaryDisplay = document.getElementById('binary-display');
+        const porchLight = document.getElementById('porch-light');
+        const motionAlert = document.getElementById('motion-alert');
+        const scanner = document.getElementById('scanner');
+        const scanBtn = document.getElementById('scanBtn');
+        const statusText = document.getElementById('status-text');
+
+        function startScan() {
+            if (isScanning) return;
+            isScanning = true;
+
+            // Reset UI
+            porchLight.classList.remove('on');
+            motionAlert.classList.remove('show');
+            binaryDisplay.innerHTML = '';
+            scanBtn.innerText = "Detecting...";
+            statusText.innerText = "Motion detected! Processing...";
+            
+            let binaryString = "";
+            let iterations = 0;
+            
+            // Simulate reading motion/heat levels
+            const interval = setInterval(() => {
+                // 1. INPUT: Simulate motion level (0-100) — random but higher when "waving"
+                const motionLevel = 60 + Math.random() * 40; // strong signal
+                
+                // Update motion meter
+                lightFill.style.width = motionLevel + "%";
+                
+                // Update LEDs (turn some red based on motion)
+                leds.forEach(led => {
+                    if (Math.random() > 0.4) {
+                        led.classList.add('active');
+                    } else {
+                        led.classList.remove('active');
+                    }
+                });
+
+                // 2. PROCESS: Convert to binary (High motion = 1, Low = 0)
+                const bit = motionLevel > 50 ? "1" : "0";
+                binaryString += bit;
+                
+                if (binaryString.length > 16) {
+                    binaryString = binaryString.slice(1);
+                }
+                
+                binaryDisplay.innerText = binaryString;
+                iterations++;
+
+                // 3. OUTPUT: After ~30 iterations, trigger porch light & alert
+                if (iterations > 30) {
+                    clearInterval(interval);
+                    porchLight.classList.add('on');
+                    motionAlert.classList.add('show');
+                    scanBtn.innerText = "Reset";
+                    
+                    setTimeout(() => {
+                        statusText.innerText = "Light on. Motion detected. Ready for next wave.";
+                        // Keep light on for a moment, then reset visuals but keep message
+                        // Reset visual meter but keep light on (it's a security light)
+                        // We'll keep porch light on and alert visible until reset
+                        isScanning = false;
+                    }, 300);
+                }
+            }, 50);
+        }
+    </script>
+</body>
+</html>
